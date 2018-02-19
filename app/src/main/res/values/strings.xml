@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">LOL Stats</string>
+    <string searchName = "searchName">Summoner Name</string>
 </resources>
