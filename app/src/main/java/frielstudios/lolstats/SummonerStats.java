@@ -23,7 +23,7 @@ import java.util.ArrayList;
  * Created by Cameron on 2/15/2018.
  */
 
-public class SummonerStats extends AppCompatActivity implements LoaderManager.LoaderCallbacks<String> {
+public class SummonerStats extends AppCompatActivity implements LoaderManager.LoaderCallbacks<SummonerStats.SummonerStatsData> {
 
     private final static int SUMMONER_LOADER_ID = 0; //id to load user account
 
@@ -60,56 +60,44 @@ public class SummonerStats extends AppCompatActivity implements LoaderManager.Lo
         loadPending = (ProgressBar)findViewById(R.id.loadPending);
         loadError = (TextView)findViewById(R.id.loadError);
 
-        //Picasso.with(this).load("https://ddragon.leagueoflegends.com/cdn/7.10.1/img/champion/Annie.png").resize(500, 500).into(championImage);
-
         Intent intent = getIntent();
         if (intent != null && intent.hasExtra("test")) {
             getSupportLoaderManager().initLoader(SUMMONER_LOADER_ID, null, this);
             search = intent.getStringExtra("test");
+            //userName.setText(search); //set the text view to the user we received
             executeSearch(search);
         }
     }
 
     private void executeSearch(String search) {
-
         String searchURL = DataUtils.buildSearchURL(search);
-        String matchListURL = "https://na1.api.riotgames.com/lol/match/v3/matchlists/by-account/";
-        String matchURL = "https://na1.api.riotgames.com/lol/match/v3/matches/";
 
         Bundle args = new Bundle(); //create a new bundle to be used by loader with our data and key
         args.putString("searchURL", searchURL);
-        args.putString("test", searchURL);
         getSupportLoaderManager().restartLoader(SUMMONER_LOADER_ID, args,this); //load in content given by user arguments
-        getSupportLoaderManager().restartLoader(1, args, this);
     }
 
     @Override
-    public Loader<String> onCreateLoader(int i, Bundle bundle) {
+    public Loader<SummonerStatsData> onCreateLoader(int i, Bundle bundle) {
         String searchURL = null;
 
         if (bundle != null) {
-            if (i == 0) {
-                searchURL = bundle.getString("searchURL");
-            }
-            else {
-                searchURL = bundle.getString("test");
-            }
+            searchURL = bundle.getString("searchURL");
         }
-        Log.d(TAG, "MY URL: " + searchURL);
+        //Log.d(TAG, "MY URL: " + searchURL);
         return new SearchLoader(this, searchURL);
     }
 
     @Override
-    public void onLoadFinished(Loader<String> loader, String s) {
+    public void onLoadFinished(Loader<SummonerStatsData> loader, SummonerStatsData data) {
         loadPending.setVisibility(View.INVISIBLE);
         //Log.d(TAG, "loader finished loading");
-        if (s != null) {
-            ArrayList<DataUtils.SearchResult> searchResults = DataUtils.parseJSON(s); //parse the username, level, and accountid
-            Log.d(TAG, "loader returning cached results" + searchResults);
-            //userName.setText(searchResults.get(0).userName);
-            //summonerLevel.setText(searchResults.get(0).summonerLevel);
+        if (data != null) {
+            //ArrayList<String> championImages = data.championImages;
 
-            statsAdapter.updateSearchResults(searchResults, "https://ddragon.leagueoflegends.com/cdn/7.10.1/img/champion/Annie.png");
+            statsAdapter.updateSearchResults(data.championNames, data.championImages);
+            //statsAdapter.updateSearchResults(championImages);
+
             loadError.setVisibility(View.INVISIBLE);
             statsView.setVisibility(View.VISIBLE);
         } else {
@@ -119,14 +107,20 @@ public class SummonerStats extends AppCompatActivity implements LoaderManager.Lo
     }
 
     @Override
-    public void onLoaderReset(Loader<String> loader) {
+    public void onLoaderReset(Loader<SummonerStats.SummonerStatsData> loader) {
 
     }
 
-    static class SearchLoader extends AsyncTaskLoader<String> {
+    public static class SummonerStatsData {
+        ArrayList<String> championImages; //holds images URLs
+        ArrayList<String> championNames; //holds names of images
+        ArrayList<String> matchJSON; //holds JSON data for specific match information
+    }
+
+    static class SearchLoader extends AsyncTaskLoader<SummonerStatsData> {
 
         String searchURL; //URL for a user's information
-        String searchData;
+        SummonerStatsData searchData;
 
         SearchLoader(Context context, String searchURL) {
             super(context);
@@ -146,11 +140,31 @@ public class SummonerStats extends AppCompatActivity implements LoaderManager.Lo
         }
 
         @Override
-        public String loadInBackground() {
+        public SummonerStatsData loadInBackground() { //NEED TO PASS AN OBJECT THAT HOLDS CHAMP IDS AND THE JSON TO THE MATCHES TO GET WINRATE
             if (searchURL != null) {
-                String searchResults = null;
+                //String searchResults = null;
+                SummonerStatsData searchResults = new SummonerStatsData();
+                searchResults.championImages = new ArrayList<>();
+                searchResults.championNames = new ArrayList<>();
                 try {
-                    searchResults = NetworkUtils.doHTTPGet(searchURL);
+                    String userResults = NetworkUtils.doHTTPGet(searchURL);
+                    Log.d(TAG, "MY ACCOUNT URL: " + searchURL);
+                    String accountID = DataUtils.getAccountID(userResults); //parse the accountID to construct matchlist URL
+                    String matchListURL = DataUtils.buildMatchListURL(accountID);
+                    Log.d(TAG, "MY MATCH LIST URL: " + matchListURL);
+                    String matchList = NetworkUtils.doHTTPGet(matchListURL);
+
+                    ArrayList<String> championIDs = DataUtils.getChampionID(matchList); //gets unique champion ids for given user
+                    String championListURL = DataUtils.buildChampionListURL();
+                    String championList = NetworkUtils.doHTTPGet(championListURL);
+                    Log.d(TAG, "MY CHAMP LIST URL: " + championListURL);
+
+                    for (int i = 0; i < championIDs.size(); i++) { //CHANGE THIS TO GET BACK THE SEARCHRESULT, NOT ANOTHER OBJECT
+                        DataUtils.SearchResult champion = DataUtils.getChampionImage(championList, championIDs.get(i));
+                        searchResults.championImages.add(champion.championImage);
+                        searchResults.championNames.add(champion.championName);
+                        //searchResults.championImages.add(DataUtils.getChampionImage(championList, championIDs.get(i)));
+                    }
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -160,7 +174,7 @@ public class SummonerStats extends AppCompatActivity implements LoaderManager.Lo
             }
         }
 
-        public void deliverResult(String data) {
+        public void deliverResult(SummonerStatsData data) {
             searchData = data;
             super.deliverResult(data);
         }

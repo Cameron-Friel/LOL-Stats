@@ -1,30 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="12dp">
 
     <ImageView
         android:id="@+id/champImage"
+        android:padding="8dp"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" />
 
     <TextView
-        android:id="@+id/userName"
+        android:id="@+id/championName"
+        android:text="Annie"
+        android:fontFamily="monospace"
         android:textColor="@color/mainText"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content" />
-
-    <TextView
-        android:id="@+id/summonerLevel"
-        android:textColor="@color/mainText"
+        android:textSize="32sp"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" />
 
     <View
+        android:background="@color/mainText"
+        android:padding="10dp"
         android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:layout_marginLeft="8dp"
-        android:layout_marginRight="8dp"
-        android:background="@drawable/background" />
+        android:layout_height="4dp" />
 
 </LinearLayout>

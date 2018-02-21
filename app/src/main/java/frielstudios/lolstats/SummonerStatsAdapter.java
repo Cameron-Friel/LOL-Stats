@@ -17,24 +17,25 @@ import java.util.ArrayList;
  */
 
 public class SummonerStatsAdapter extends RecyclerView.Adapter<SummonerStatsAdapter.StatsViewHolder> {
-    private ArrayList<DataUtils.SearchResult> userList; //holds data for each character for a given user
-    private String image;
+    private ArrayList<String> championImages; //holds data for each champion image
+    private ArrayList<String> championNames; //holds name for each image
+
     //private OnSearchItemClickListener mSeachItemClickListener;
 
     /*SummonerStatsAdapter(OnSearchItemClickListener searchItemClickListener) {
         mSeachItemClickListener = searchItemClickListener;
     }*/
 
-    public void updateSearchResults(ArrayList<DataUtils.SearchResult> searchResultsList, String image) {
-        userList = searchResultsList;
-        this.image = image;
+    public void updateSearchResults(ArrayList<String> championNames, ArrayList<String> championImages) {
+        this.championNames = championNames;
+        this.championImages = championImages;
         notifyDataSetChanged();
     }
 
     @Override
     public int getItemCount() {
-        if (userList != null) {
-            return userList.size();
+        if (championImages != null) {
+            return championImages.size();
         } else {
             return 0;
         }
@@ -53,18 +54,17 @@ public class SummonerStatsAdapter extends RecyclerView.Adapter<SummonerStatsAdap
 
     @Override
     public void onBindViewHolder(StatsViewHolder holder, int position) {
-        holder.bind(userList.get(position), image);
+        //holder.bind(userList.get(position), image);
+        holder.bind(championNames.get(position), championImages.get(position));
     }
 
     class StatsViewHolder extends RecyclerView.ViewHolder {
-        private TextView userName; //holds the username
-        private TextView summonerLevel; //holds user's level
-        private ImageView championImage;
+        private TextView championName; //holds name of championImage
+        private ImageView championImage; //holds image of champion
 
         public StatsViewHolder(View itemView) {
             super(itemView);
-            userName = (TextView) itemView.findViewById(R.id.userName);
-            summonerLevel = (TextView) itemView.findViewById(R.id.summonerLevel);
+            championName = (TextView)itemView.findViewById(R.id.championName);
             championImage = (ImageView) itemView.findViewById(R.id.champImage);
 
             itemView.setOnClickListener(new View.OnClickListener() {
@@ -76,9 +76,8 @@ public class SummonerStatsAdapter extends RecyclerView.Adapter<SummonerStatsAdap
             });
         }
 
-        public void bind(DataUtils.SearchResult searchResult, String image) {
-            userName.setText(searchResult.userName);
-            summonerLevel.setText(searchResult.summonerLevel);
+          public void bind(String name, String image) {
+            championName.setText(name);
             Picasso.with(championImage.getContext()).load(image).resize(300, 300).into(championImage);
         }
     }

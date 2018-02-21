@@ -18,6 +18,7 @@
             android:id="@+id/loadError"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:textColor="@color/mainText"
             android:textSize="20sp"
             android:padding="16dp"
             android:text="Something went wrong!"
