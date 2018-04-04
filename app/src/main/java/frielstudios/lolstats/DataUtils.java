@@ -1,6 +1,7 @@
 package frielstudios.lolstats;
 
 import android.net.Uri;
+import android.os.health.SystemHealthManager;
 import android.util.Log;
 
 import org.json.JSONArray;
@@ -9,6 +10,7 @@ import org.json.JSONObject;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Iterator;
 
 import static android.content.ContentValues.TAG;
 
@@ -24,15 +26,21 @@ public class DataUtils {
 
     final static String BASE_URL_MATCHLIST = "https://na1.api.riotgames.com/lol/match/v3/matchlists/by-account/"; //base url to get matchlist of user's games
 
+    final static String BASE_URL_CHAMPION_MATCHES = "https://na1.api.riotgames.com/lol/match/v3/matchlists/by-account/"; //base url to get matches specified by champion
+    final static String CHAMPION_PARAM = "champion";
+
+    final static String BASE_URL_CHAMPION_MATCH = "https://na1.api.riotgames.com/lol/match/v3/matches/"; //base url to get specific match
+
     final static String BASE_URL_CHAMPION_IMAGE = "https://ddragon.leagueoflegends.com/cdn/8.3.1/img/champion/"; //base url to get champion image reference
 
-    final static String BASE_URL_CHAMPION_LIST = "https://na1.api.riotgames.com/lol/static-data/v3/champions"; //base url to get champion list
+    final static String BASE_URL_CHAMPION_LIST = "http://ddragon.leagueoflegends.com/cdn/6.24.1/data/en_US/champion.json";
+    /*final static String BASE_URL_CHAMPION_LIST = "https://na1.api.riotgames.com/lol/static-data/v3/champions"; //base url to get champion list
     final static String LANGUAGE_PARAM = "locale";
     final static String LANGUAGE_VALUE = "en_US";
     final static String CONDITION_PARAM = "dataById";
-    final static String CONDITION_VALUE = "true";
+    final static String CONDITION_VALUE = "true";*/
 
-    final static String API_KEY = "RGAPI-2aac79a5-7a08-4a2e-b773-af72174e4e30"; //api key to access data
+    final static String API_KEY = "RGAPI-ecc3c79f-d354-4d2c-85f1-468332d0c551"; //api key to access data
     final static String API_PARAM = "api_key";
 
     public static class SearchResult implements Serializable {
@@ -48,9 +56,17 @@ public class DataUtils {
         return Uri.parse(BASE_URL_MATCHLIST + accountID).buildUpon().appendQueryParameter(API_PARAM, API_KEY).build().toString();
     }
 
+    public static String buildChampionMatchesURL(String accountID, String championID) {
+        return Uri.parse(BASE_URL_CHAMPION_MATCHES + accountID).buildUpon().appendQueryParameter(CHAMPION_PARAM, championID)
+                .appendQueryParameter(API_PARAM, API_KEY).build().toString();
+    }
+
+    public static String buildDetailedChampionMatch(String gameID) {
+        return Uri.parse(BASE_URL_CHAMPION_MATCH + gameID).buildUpon().appendQueryParameter(API_PARAM, API_KEY).build().toString();
+    }
+
     public static String buildChampionListURL() {
-        return Uri.parse(BASE_URL_CHAMPION_LIST).buildUpon().appendQueryParameter(LANGUAGE_PARAM, LANGUAGE_VALUE)
-                .appendQueryParameter(CONDITION_PARAM, CONDITION_VALUE).appendQueryParameter(API_PARAM, API_KEY).build().toString();
+        return Uri.parse(BASE_URL_CHAMPION_LIST).toString();
     }
 
     public static String getAccountID(String searchResult) {
@@ -103,19 +119,78 @@ public class DataUtils {
         }
     }
 
+    public static ArrayList<String> getChampionMatches(String matches) {
+        try {
+            JSONObject searchResultsObj = new JSONObject(matches);
+            JSONArray searchResultsItems = searchResultsObj.getJSONArray("matches");
+
+            ArrayList<String> championMatches = new ArrayList<String>();
+
+            for (int i = 0; i < searchResultsItems.length(); i++) {
+                JSONObject resultItem = searchResultsItems.getJSONObject(i);
+
+                if (resultItem.getString("queue").equals("420")) {
+                    championMatches.add(resultItem.getString("gameId"));
+                }
+            }
+            return championMatches;
+        } catch (JSONException e) {
+            return null;
+        }
+    }
+
+    public static Integer getChampionMatchResult(String matchDetails, String accountID, Integer wins) {
+        try {
+            JSONObject searchResultsObj = new JSONObject(matchDetails);
+            JSONArray searchResultsItems = searchResultsObj.getJSONArray("participantIdentities");
+
+            for (int i = 0; i < searchResultsItems.length(); i++) {
+                JSONObject resultItem = searchResultsItems.getJSONObject(i);
+
+                if (resultItem.getJSONObject("player").getString("accountId").equals(accountID)) {
+                    int participantId = resultItem.getInt("participantId"); //store the user's id
+
+                    JSONArray teams = searchResultsObj.getJSONArray("teams"); //fetch array of game results
+
+                    if (teams.getJSONObject(0).getString("win").equals("Win") && participantId < 5) { //IS 5 THE RIGHT BOUND FOR BLUE TEAM?
+                        wins++; //the user won, increment to keep track of how many wins total
+                    }
+                    else {
+                        //do nothing, the user lost this game
+                    }
+                    //Log.d(TAG, "PARTICIPANT ID: " + wins);
+                    //break;
+                }
+            }
+            return wins;
+        } catch (JSONException e) {
+            return null;
+        }
+    }
+
     public static SearchResult getChampionImage(String championList, String championID) { //ERROR, NAMES WITH SPACES ARE NOT RETRIEVED FOR IMAGES
            try {
                JSONObject holder = new JSONObject(championList);
+               JSONObject holderItems = holder.getJSONObject("data");
                SearchResult champion = new SearchResult();
 
-               champion.championName = holder.getJSONObject("data").getJSONObject(championID).getString("name");
+               for (Iterator<String> it = holderItems.keys(); it.hasNext(); ) { //iterate through champion json objects
+                   String key = it.next();
+                   JSONObject resultItem = holderItems.getJSONObject(key);
 
-               String tempName = champion.championName + ".png";
+                   if (resultItem.getString("key").equals(championID)) {
+                       champion.championName = key; //the key for the json object is also the name of the champion
+                       break;
+                   }
+               }
+
+               String tempName = champion.championName + ".png"; //construct string for champion image
 
                champion.championImage = Uri.parse(BASE_URL_CHAMPION_IMAGE + tempName).buildUpon().build().toString();
 
                return champion;
         } catch (JSONException e) {
+               System.out.println(e);
             return null;
         }
     }

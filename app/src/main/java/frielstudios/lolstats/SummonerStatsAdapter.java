@@ -19,6 +19,7 @@ import java.util.ArrayList;
 public class SummonerStatsAdapter extends RecyclerView.Adapter<SummonerStatsAdapter.StatsViewHolder> {
     private ArrayList<String> championImages; //holds data for each champion image
     private ArrayList<String> championNames; //holds name for each image
+    private ArrayList<Integer> championWinRates; //holds win percentage for each champion
 
     //private OnSearchItemClickListener mSeachItemClickListener;
 
@@ -26,9 +27,10 @@ public class SummonerStatsAdapter extends RecyclerView.Adapter<SummonerStatsAdap
         mSeachItemClickListener = searchItemClickListener;
     }*/
 
-    public void updateSearchResults(ArrayList<String> championNames, ArrayList<String> championImages) {
+    public void updateSearchResults(ArrayList<String> championNames, ArrayList<String> championImages, ArrayList<Integer> championWinRates) {
         this.championNames = championNames;
         this.championImages = championImages;
+        this.championWinRates = championWinRates;
         notifyDataSetChanged();
     }
 
@@ -55,16 +57,18 @@ public class SummonerStatsAdapter extends RecyclerView.Adapter<SummonerStatsAdap
     @Override
     public void onBindViewHolder(StatsViewHolder holder, int position) {
         //holder.bind(userList.get(position), image);
-        holder.bind(championNames.get(position), championImages.get(position));
+        holder.bind(championNames.get(position), championImages.get(position), championWinRates.get(position));
     }
 
     class StatsViewHolder extends RecyclerView.ViewHolder {
         private TextView championName; //holds name of championImage
+        private TextView championWinRate; //holds win rate of champion
         private ImageView championImage; //holds image of champion
 
         public StatsViewHolder(View itemView) {
             super(itemView);
             championName = (TextView)itemView.findViewById(R.id.championName);
+            championWinRate = (TextView)itemView.findViewById(R.id.championWinRate);
             championImage = (ImageView) itemView.findViewById(R.id.champImage);
 
             itemView.setOnClickListener(new View.OnClickListener() {
@@ -76,9 +80,10 @@ public class SummonerStatsAdapter extends RecyclerView.Adapter<SummonerStatsAdap
             });
         }
 
-          public void bind(String name, String image) {
-            championName.setText(name);
+          public void bind(String name, String image, Integer winRate) {
             Picasso.with(championImage.getContext()).load(image).resize(300, 300).into(championImage);
+            championName.setText(name);
+            championWinRate.setText("\nWin Rate: " + winRate + "%");
         }
     }
 }

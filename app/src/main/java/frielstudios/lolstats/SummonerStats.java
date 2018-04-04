@@ -93,10 +93,7 @@ public class SummonerStats extends AppCompatActivity implements LoaderManager.Lo
         loadPending.setVisibility(View.INVISIBLE);
         //Log.d(TAG, "loader finished loading");
         if (data != null) {
-            //ArrayList<String> championImages = data.championImages;
-
-            statsAdapter.updateSearchResults(data.championNames, data.championImages);
-            //statsAdapter.updateSearchResults(championImages);
+            statsAdapter.updateSearchResults(data.championNames, data.championImages, data.championWinRates);
 
             loadError.setVisibility(View.INVISIBLE);
             statsView.setVisibility(View.VISIBLE);
@@ -114,6 +111,7 @@ public class SummonerStats extends AppCompatActivity implements LoaderManager.Lo
     public static class SummonerStatsData {
         ArrayList<String> championImages; //holds images URLs
         ArrayList<String> championNames; //holds names of images
+        ArrayList<Integer> championWinRates; //holds percentage of wins for given champion
         ArrayList<String> matchJSON; //holds JSON data for specific match information
     }
 
@@ -140,16 +138,17 @@ public class SummonerStats extends AppCompatActivity implements LoaderManager.Lo
         }
 
         @Override
-        public SummonerStatsData loadInBackground() { //NEED TO PASS AN OBJECT THAT HOLDS CHAMP IDS AND THE JSON TO THE MATCHES TO GET WINRATE
+        public SummonerStatsData loadInBackground() { //NEED TO PASS AN OBJECT THAT HOLDS CHAMP IDS AND THE JSON TO THE MATCHES TO GET WIN RATE
             if (searchURL != null) {
                 //String searchResults = null;
                 SummonerStatsData searchResults = new SummonerStatsData();
                 searchResults.championImages = new ArrayList<>();
                 searchResults.championNames = new ArrayList<>();
+                searchResults.championWinRates = new ArrayList<>();
                 try {
                     String userResults = NetworkUtils.doHTTPGet(searchURL);
                     Log.d(TAG, "MY ACCOUNT URL: " + searchURL);
-                    String accountID = DataUtils.getAccountID(userResults); //parse the accountID to construct matchlist URL
+                    String accountID = DataUtils.getAccountID(userResults); //parse the accountID to construct match list URL
                     String matchListURL = DataUtils.buildMatchListURL(accountID);
                     Log.d(TAG, "MY MATCH LIST URL: " + matchListURL);
                     String matchList = NetworkUtils.doHTTPGet(matchListURL);
@@ -159,12 +158,38 @@ public class SummonerStats extends AppCompatActivity implements LoaderManager.Lo
                     String championList = NetworkUtils.doHTTPGet(championListURL);
                     Log.d(TAG, "MY CHAMP LIST URL: " + championListURL);
 
-                    for (int i = 0; i < championIDs.size(); i++) { //CHANGE THIS TO GET BACK THE SEARCHRESULT, NOT ANOTHER OBJECT
+                    for (int i = 0; i < championIDs.size(); i++) { //CHANGE THIS TO GET BACK THE SEARCH RESULT, NOT ANOTHER OBJECT
                         DataUtils.SearchResult champion = DataUtils.getChampionImage(championList, championIDs.get(i));
                         searchResults.championImages.add(champion.championImage);
                         searchResults.championNames.add(champion.championName);
-                        //searchResults.championImages.add(DataUtils.getChampionImage(championList, championIDs.get(i)));
                     }
+
+                    Integer wins = 0; //holds the amount of wins on a given champion
+                    Integer totalGames = 0; //holds amount of games played on champion
+
+                    for (int i = 0; i < championIDs.size(); i++) {
+                        String matchURL = DataUtils.buildChampionMatchesURL(accountID, championIDs.get(i)); //create url for specific champion match list
+                        String championMatch = NetworkUtils.doHTTPGet(matchURL);
+                        ArrayList<String> gameIDs = DataUtils.getChampionMatches(championMatch);
+
+                        for (int j = 0; j < 1; j++) { //used to be gameIDs.size() THERE IS A NULL OBJECT???
+                            String detailedMatchURL = DataUtils.buildDetailedChampionMatch(gameIDs.get(j));
+                            String matchDetail = NetworkUtils.doHTTPGet(detailedMatchURL);
+                            wins = DataUtils.getChampionMatchResult(matchDetail, accountID, wins);
+                            totalGames++;
+                            //NEED TO FIND WHETHER THEY WIN OR LOSE FROM CALL TO EACH MATCH
+                        }
+
+                        Integer winRate = wins / totalGames;
+                        if (winRate == 1) { //check to see if win rate is 100%
+                            winRate = 100;
+                        }
+
+                        searchResults.championWinRates.add(winRate);
+                        wins = 0; //reset winRate variable after specific champion ID is calculated
+                        totalGames = 0;
+                    }
+
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
