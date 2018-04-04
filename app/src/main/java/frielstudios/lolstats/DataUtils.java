@@ -1,7 +1,6 @@
 package frielstudios.lolstats;
 
 import android.net.Uri;
-import android.os.health.SystemHealthManager;
 import android.util.Log;
 
 import org.json.JSONArray;
@@ -33,12 +32,7 @@ public class DataUtils {
 
     final static String BASE_URL_CHAMPION_IMAGE = "https://ddragon.leagueoflegends.com/cdn/8.3.1/img/champion/"; //base url to get champion image reference
 
-    final static String BASE_URL_CHAMPION_LIST = "http://ddragon.leagueoflegends.com/cdn/6.24.1/data/en_US/champion.json";
-    /*final static String BASE_URL_CHAMPION_LIST = "https://na1.api.riotgames.com/lol/static-data/v3/champions"; //base url to get champion list
-    final static String LANGUAGE_PARAM = "locale";
-    final static String LANGUAGE_VALUE = "en_US";
-    final static String CONDITION_PARAM = "dataById";
-    final static String CONDITION_VALUE = "true";*/
+    final static String BASE_URL_CHAMPION_LIST = "http://ddragon.leagueoflegends.com/cdn/6.24.1/data/en_US/champion.json"; //base url to get champion names and stats
 
     final static String API_KEY = "RGAPI-ecc3c79f-d354-4d2c-85f1-468332d0c551"; //api key to access data
     final static String API_PARAM = "api_key";
@@ -139,7 +133,7 @@ public class DataUtils {
         }
     }
 
-    public static Integer getChampionMatchResult(String matchDetails, String accountID, Integer wins) {
+    public static double getChampionMatchResult(String matchDetails, String accountID, double wins) { //determines whether user won a specific match or not
         try {
             JSONObject searchResultsObj = new JSONObject(matchDetails);
             JSONArray searchResultsItems = searchResultsObj.getJSONArray("participantIdentities");
@@ -149,22 +143,26 @@ public class DataUtils {
 
                 if (resultItem.getJSONObject("player").getString("accountId").equals(accountID)) {
                     int participantId = resultItem.getInt("participantId"); //store the user's id
+                    System.out.println(participantId);
 
                     JSONArray teams = searchResultsObj.getJSONArray("teams"); //fetch array of game results
-
-                    if (teams.getJSONObject(0).getString("win").equals("Win") && participantId < 5) { //IS 5 THE RIGHT BOUND FOR BLUE TEAM?
+                    System.out.println(teams.getJSONObject(0).getString("win"));
+                    if (teams.getJSONObject(0).getString("win").equals("Win") && participantId < 5) { //check for user as blue team winning
+                        wins++; //the user won, increment to keep track of how many wins total
+                    }
+                    else if (teams.getJSONObject(0).getString("win").equals("Fail") && participantId > 5) { //check for user as red team winning
                         wins++; //the user won, increment to keep track of how many wins total
                     }
                     else {
                         //do nothing, the user lost this game
                     }
-                    //Log.d(TAG, "PARTICIPANT ID: " + wins);
-                    //break;
+                    break; //break, the user has been found
                 }
             }
             return wins;
         } catch (JSONException e) {
-            return null;
+            System.out.println("JSON CHAMPION MATCH RESULT EXCEPTION: " + e);
+            return -1;
         }
     }
 

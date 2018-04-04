@@ -80,7 +80,7 @@ public class SummonerStatsAdapter extends RecyclerView.Adapter<SummonerStatsAdap
             });
         }
 
-          public void bind(String name, String image, Integer winRate) {
+          public void bind(String name, String image, int winRate) {
             Picasso.with(championImage.getContext()).load(image).resize(300, 300).into(championImage);
             championName.setText(name);
             championWinRate.setText("\nWin Rate: " + winRate + "%");

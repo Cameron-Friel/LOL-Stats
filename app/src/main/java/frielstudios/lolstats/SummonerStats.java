@@ -164,25 +164,30 @@ public class SummonerStats extends AppCompatActivity implements LoaderManager.Lo
                         searchResults.championNames.add(champion.championName);
                     }
 
-                    Integer wins = 0; //holds the amount of wins on a given champion
-                    Integer totalGames = 0; //holds amount of games played on champion
+                    double wins = 0.0; //holds the amount of wins on a given champion
+                    double totalGames = 0.0; //holds amount of games played on champion
 
-                    for (int i = 0; i < championIDs.size(); i++) {
+                    for (int i = 0; i < championIDs.size(); i++) { //iterate through all champions user has played in ranked
                         String matchURL = DataUtils.buildChampionMatchesURL(accountID, championIDs.get(i)); //create url for specific champion match list
                         String championMatch = NetworkUtils.doHTTPGet(matchURL);
                         ArrayList<String> gameIDs = DataUtils.getChampionMatches(championMatch);
 
-                        for (int j = 0; j < 1; j++) { //used to be gameIDs.size() THERE IS A NULL OBJECT???
+                        for (int j = 0; j < gameIDs.size(); j++) { //iterate through games to determine whether they won or not
                             String detailedMatchURL = DataUtils.buildDetailedChampionMatch(gameIDs.get(j));
                             String matchDetail = NetworkUtils.doHTTPGet(detailedMatchURL);
                             wins = DataUtils.getChampionMatchResult(matchDetail, accountID, wins);
-                            totalGames++;
-                            //NEED TO FIND WHETHER THEY WIN OR LOSE FROM CALL TO EACH MATCH
+                            totalGames++; //increment the total games played with champion being checked
                         }
 
-                        Integer winRate = wins / totalGames;
-                        if (winRate == 1) { //check to see if win rate is 100%
+                        int winRate = 0;
+                        float tempWinRate = (float) (wins / totalGames) * 100;
+
+                        if (tempWinRate == 1.0) { //check to see if win rate is 100%
                             winRate = 100;
+                        } else if (tempWinRate == 0.0) { //check to see if win rate is 0%
+                            winRate = 0;
+                        } else { //user has a unique win rate to convert
+                            winRate = Math.round(tempWinRate);
                         }
 
                         searchResults.championWinRates.add(winRate);
