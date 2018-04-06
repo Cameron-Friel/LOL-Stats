@@ -60,10 +60,12 @@ public class SummonerStats extends AppCompatActivity implements LoaderManager.Lo
         loadPending = (ProgressBar)findViewById(R.id.loadPending);
         loadError = (TextView)findViewById(R.id.loadError);
 
+        loadPending.setVisibility(View.VISIBLE); //display to user that their data is being fetched
+
         Intent intent = getIntent();
-        if (intent != null && intent.hasExtra("test")) {
+        if (intent != null && intent.hasExtra(MainActivity.USERNAME_ID)) {
             getSupportLoaderManager().initLoader(SUMMONER_LOADER_ID, null, this);
-            search = intent.getStringExtra("test");
+            search = intent.getStringExtra(MainActivity.USERNAME_ID);
             //userName.setText(search); //set the text view to the user we received
             executeSearch(search);
         }

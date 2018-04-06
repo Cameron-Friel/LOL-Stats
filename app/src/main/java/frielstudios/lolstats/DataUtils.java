@@ -34,7 +34,7 @@ public class DataUtils {
 
     final static String BASE_URL_CHAMPION_LIST = "http://ddragon.leagueoflegends.com/cdn/6.24.1/data/en_US/champion.json"; //base url to get champion names and stats
 
-    final static String API_KEY = "RGAPI-ecc3c79f-d354-4d2c-85f1-468332d0c551"; //api key to access data
+    final static String API_KEY = "RGAPI-cd01f188-9e84-48d6-8120-366b892847d1"; //api key to access data
     final static String API_PARAM = "api_key";
 
     public static class SearchResult implements Serializable {
@@ -143,10 +143,9 @@ public class DataUtils {
 
                 if (resultItem.getJSONObject("player").getString("accountId").equals(accountID)) {
                     int participantId = resultItem.getInt("participantId"); //store the user's id
-                    System.out.println(participantId);
 
                     JSONArray teams = searchResultsObj.getJSONArray("teams"); //fetch array of game results
-                    System.out.println(teams.getJSONObject(0).getString("win"));
+
                     if (teams.getJSONObject(0).getString("win").equals("Win") && participantId < 5) { //check for user as blue team winning
                         wins++; //the user won, increment to keep track of how many wins total
                     }
@@ -188,7 +187,7 @@ public class DataUtils {
 
                return champion;
         } catch (JSONException e) {
-               System.out.println(e);
+            System.out.println(e);
             return null;
         }
     }
