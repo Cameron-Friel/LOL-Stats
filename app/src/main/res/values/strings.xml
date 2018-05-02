@@ -2,4 +2,12 @@
     <string name="app_name">LOL Stats</string>
     <string name="searchName">Summoner Name</string>
     <string name="settingsName">Settings</string>
+
+    <!--Shared Preference Strings -->
+    <string name="summonerNameKey">Key</string>
+    <string name="summonerNameTitle">Default Summoner Entry:</string>
+    <string name="summonerNameValue"></string>
+
+    <!--Errors -->
+    <string name="noData">Something went wrong!</string>
 </resources>

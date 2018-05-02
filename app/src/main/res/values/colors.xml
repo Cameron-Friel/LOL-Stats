@@ -2,9 +2,10 @@
 <resources>
     <color name="colorPrimary">#3F51B5</color>
     <color name="colorPrimaryDark">#303F9F</color>
-    <color name="colorAccent">#f2e0e6</color>
-    <color name="searchBackground">#4d4b4b</color>
-    <color name="borderLine">#4d4b4b</color>
-    <color name="mainText">#FFF</color>
-    <color name="titleBackground">#000000</color>
+    <color name="colorAccent">#d9c9ce</color>
+    <color name="searchBackground">#303063</color>
+    <color name="borderLine">#b17c19</color>
+    <color name="mainText">#c66868</color>
+    <color name="titleBackground">#1b234d</color>
+    <color name="statsBackground">#0a0c1b</color>
 </resources>

@@ -34,12 +34,18 @@ public class DataUtils {
 
     final static String BASE_URL_CHAMPION_LIST = "http://ddragon.leagueoflegends.com/cdn/6.24.1/data/en_US/champion.json"; //base url to get champion names and stats
 
-    final static String API_KEY = "RGAPI-cd01f188-9e84-48d6-8120-366b892847d1"; //api key to access data
+    final static String BASE_URL_RANK = "https://na1.api.riotgames.com/lol/league/v3/positions/by-summoner/"; //base url to get user's rank
+
+    final static String API_KEY = "RGAPI-c83833d7-f356-4d85-b5fa-42b70ca9bb03"; //api key to access data
     final static String API_PARAM = "api_key";
 
     public static class SearchResult implements Serializable {
         public String championName;
         public String championImage;
+    }
+
+    public static String buildRankURL(String summonerID) {
+        return Uri.parse(BASE_URL_RANK + summonerID).buildUpon().appendQueryParameter(API_PARAM, API_KEY).build().toString();
     }
 
     public static String buildSearchURL(String userName) {
@@ -66,11 +72,18 @@ public class DataUtils {
     public static String getAccountID(String searchResult) {
         try {
             JSONObject holder = new JSONObject(searchResult);
-            String result;
 
-            result = holder.getString("accountId");
+            return holder.getString("accountId");
+        } catch (JSONException e) {
+            return null;
+        }
+    }
 
-            return result;
+    public static String getSummonerID(String searchResult) {
+        try {
+            JSONObject holder = new JSONObject(searchResult);
+
+            return holder.getString("id");
         } catch (JSONException e) {
             return null;
         }
@@ -186,6 +199,19 @@ public class DataUtils {
                champion.championImage = Uri.parse(BASE_URL_CHAMPION_IMAGE + tempName).buildUpon().build().toString();
 
                return champion;
+        } catch (JSONException e) {
+            System.out.println(e);
+            return null;
+        }
+    }
+
+    public static String getUserRank(String summonerRankJSON) { //retrieves user's rank
+        try {
+            JSONArray holder = new JSONArray(summonerRankJSON);
+            JSONObject resultItem = holder.getJSONObject(0);
+            String result = resultItem.getString("tier");
+
+            return result;
         } catch (JSONException e) {
             System.out.println(e);
             return null;

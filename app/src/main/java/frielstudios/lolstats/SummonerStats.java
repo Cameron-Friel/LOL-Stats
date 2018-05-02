@@ -14,6 +14,10 @@ import android.view.View;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.request.RequestOptions;
+
 import static android.content.ContentValues.TAG;
 
 import java.io.IOException;
@@ -23,9 +27,11 @@ import java.util.ArrayList;
  * Created by Cameron on 2/15/2018.
  */
 
-public class SummonerStats extends AppCompatActivity implements LoaderManager.LoaderCallbacks<SummonerStats.SummonerStatsData> {
+public class SummonerStats extends AppCompatActivity implements LoaderManager.LoaderCallbacks<SummonerStats.SummonerStatsData>, SummonerStatsAdapter.OnSearchItemClickListener {
 
     private final static int SUMMONER_LOADER_ID = 0; //id to load user account
+    public final static String NAME_KEY = "nameKey"; //key to name intent passed to ChampionStats Activity
+    public final static String MATCH_LIST_KEY = "matchListKey"; //key to pass match list to ChampionStats Activity
 
     private RecyclerView statsView;
 
@@ -34,19 +40,23 @@ public class SummonerStats extends AppCompatActivity implements LoaderManager.Lo
     private String search; //string that stores the user's search string
 
     private TextView userName;
+    private ImageView userRank;
     private TextView summonerLevel;
 
     private ProgressBar loadPending;
     private TextView loadError;
 
-    private ImageView championImage;
+    public String matchList; //stores match list to avoid querying again
+
+    //private ImageView championImage;
 
     protected void onCreate(Bundle savedInstanceState) {
 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_stats);
 
-        //userName = (TextView)findViewById(R.id.userName);
+        userName = (TextView)findViewById(R.id.userName);
+        userRank = (ImageView)findViewById(R.id.userRank);
         //summonerLevel = (TextView)findViewById(R.id.summonerLevel);
         //championImage = (ImageView)findViewById(R.id.champImage);
 
@@ -54,7 +64,7 @@ public class SummonerStats extends AppCompatActivity implements LoaderManager.Lo
         statsView.setLayoutManager(new LinearLayoutManager(this));
         statsView.setHasFixedSize(true);
 
-        statsAdapter = new SummonerStatsAdapter();
+        statsAdapter = new SummonerStatsAdapter(this);
         statsView.setAdapter(statsAdapter);
 
         loadPending = (ProgressBar)findViewById(R.id.loadPending);
@@ -66,8 +76,17 @@ public class SummonerStats extends AppCompatActivity implements LoaderManager.Lo
         if (intent != null && intent.hasExtra(MainActivity.USERNAME_ID)) {
             getSupportLoaderManager().initLoader(SUMMONER_LOADER_ID, null, this);
             search = intent.getStringExtra(MainActivity.USERNAME_ID);
-            //userName.setText(search); //set the text view to the user we received
-            executeSearch(search);
+
+            search = capitalizeString(search);
+            if (search != null) {
+                //set the username we received from the MainActivity
+                userName.setText(search);
+                executeSearch(search); //begin data aggregation
+            }
+            else { //user gave bad string
+                loadPending.setVisibility(View.INVISIBLE);
+                loadError.setVisibility(View.VISIBLE);
+            }
         }
     }
 
@@ -95,7 +114,10 @@ public class SummonerStats extends AppCompatActivity implements LoaderManager.Lo
         loadPending.setVisibility(View.INVISIBLE);
         //Log.d(TAG, "loader finished loading");
         if (data != null) {
-            statsAdapter.updateSearchResults(data.championNames, data.championImages, data.championWinRates);
+            setRankImage(data.summonerRank);
+            statsAdapter.updateSearchResults(data.championNames, data.championImages, data.championWinRates, data.championPerformances);
+
+            matchList = data.matchList; //store matchList for less overhead in ChampionStats Activity
 
             loadError.setVisibility(View.INVISIBLE);
             statsView.setVisibility(View.VISIBLE);
@@ -105,15 +127,41 @@ public class SummonerStats extends AppCompatActivity implements LoaderManager.Lo
         }
     }
 
+    public void setRankImage(String rank) { //COULD ALSO BE PLAT, DIAMOND, MASTER, OR CHALLENGER | MUST ADD THIS
+        if (rank.equals("BRONZE")) {
+            Glide.with(this).load(R.drawable.bronze).apply(new RequestOptions().override(500, 500))
+                    .into(userRank);
+        }
+        else if (rank.equals("SILVER")) {
+            Glide.with(this).load(R.drawable.silver).apply(new RequestOptions().override(500, 500))
+                    .into(userRank);
+        }
+        else {
+            Glide.with(this).load(R.drawable.gold).apply(new RequestOptions().override(500, 500))
+                    .into(userRank);
+        }
+    }
+
     @Override
     public void onLoaderReset(Loader<SummonerStats.SummonerStatsData> loader) {
 
+    }
+
+    @Override
+    public void onChampionClick(String name) { //create new intent on click of recycler view item
+        Intent championIntent = new Intent(this, ChampionStats.class);
+        championIntent.putExtra(NAME_KEY, name);
+        championIntent.putExtra(SummonerStats.MATCH_LIST_KEY, matchList);
+        startActivity(championIntent);
     }
 
     public static class SummonerStatsData {
         ArrayList<String> championImages; //holds images URLs
         ArrayList<String> championNames; //holds names of images
         ArrayList<Integer> championWinRates; //holds percentage of wins for given champion
+        ArrayList<Integer> championPerformances; //holds whether the user is doing well on the champion or not
+        String summonerRank; //rank of the user's account
+        String matchList;
         ArrayList<String> matchJSON; //holds JSON data for specific match information
     }
 
@@ -131,12 +179,36 @@ public class SummonerStats extends AppCompatActivity implements LoaderManager.Lo
         protected void onStartLoading() {
             if (searchURL != null) {
                 if (searchData != null) {
+                    System.out.println("Heat" + searchData);
                     deliverResult(searchData);
                 }
                 else {
                     forceLoad();
                 }
             }
+        }
+
+        private int determinePerformance(Integer winRate) { //give user a performance indicator on champion based off of their win rate
+            if (winRate > 50) {
+                return R.drawable.flame; //user is playing well on champion
+            }
+            else {
+                return R.drawable.snow_flake; //user in under performing on champion
+            }
+        }
+
+        private int calculateWinRate(double wins, double totalGames) { //calculates win rate based off of amount of wins and games played
+            int winRate = 0;
+            float tempWinRate = (float) (wins / totalGames) * 100;
+
+            if (tempWinRate == 1.0) { //check to see if win rate is 100%
+                winRate = 100;
+            } else if (tempWinRate == 0.0) { //check to see if win rate is 0%
+                winRate = 0;
+            } else { //user has a unique win rate to convert
+                winRate = Math.round(tempWinRate);
+            }
+            return winRate;
         }
 
         @Override
@@ -147,6 +219,8 @@ public class SummonerStats extends AppCompatActivity implements LoaderManager.Lo
                 searchResults.championImages = new ArrayList<>();
                 searchResults.championNames = new ArrayList<>();
                 searchResults.championWinRates = new ArrayList<>();
+                searchResults.championPerformances = new ArrayList<>();
+
                 try {
                     String userResults = NetworkUtils.doHTTPGet(searchURL);
                     Log.d(TAG, "MY ACCOUNT URL: " + searchURL);
@@ -154,11 +228,16 @@ public class SummonerStats extends AppCompatActivity implements LoaderManager.Lo
                     String matchListURL = DataUtils.buildMatchListURL(accountID);
                     Log.d(TAG, "MY MATCH LIST URL: " + matchListURL);
                     String matchList = NetworkUtils.doHTTPGet(matchListURL);
+                    searchResults.matchList = matchList; //store matchList for less overhead later
 
                     ArrayList<String> championIDs = DataUtils.getChampionID(matchList); //gets unique champion ids for given user
                     String championListURL = DataUtils.buildChampionListURL();
                     String championList = NetworkUtils.doHTTPGet(championListURL);
                     Log.d(TAG, "MY CHAMP LIST URL: " + championListURL);
+
+                    if (championIDs == null) { //could not retrieve data from the API
+                        return null;
+                    }
 
                     for (int i = 0; i < championIDs.size(); i++) { //CHANGE THIS TO GET BACK THE SEARCH RESULT, NOT ANOTHER OBJECT
                         DataUtils.SearchResult champion = DataUtils.getChampionImage(championList, championIDs.get(i));
@@ -174,6 +253,10 @@ public class SummonerStats extends AppCompatActivity implements LoaderManager.Lo
                         String championMatch = NetworkUtils.doHTTPGet(matchURL);
                         ArrayList<String> gameIDs = DataUtils.getChampionMatches(championMatch);
 
+                        if (gameIDs == null) { //could not retrieve data from API
+                            return null;
+                        }
+
                         for (int j = 0; j < gameIDs.size(); j++) { //iterate through games to determine whether they won or not
                             String detailedMatchURL = DataUtils.buildDetailedChampionMatch(gameIDs.get(j));
                             String matchDetail = NetworkUtils.doHTTPGet(detailedMatchURL);
@@ -181,21 +264,22 @@ public class SummonerStats extends AppCompatActivity implements LoaderManager.Lo
                             totalGames++; //increment the total games played with champion being checked
                         }
 
-                        int winRate = 0;
-                        float tempWinRate = (float) (wins / totalGames) * 100;
+                        Integer winRate = calculateWinRate(wins, totalGames);
 
-                        if (tempWinRate == 1.0) { //check to see if win rate is 100%
-                            winRate = 100;
-                        } else if (tempWinRate == 0.0) { //check to see if win rate is 0%
-                            winRate = 0;
-                        } else { //user has a unique win rate to convert
-                            winRate = Math.round(tempWinRate);
-                        }
+                        int performance = determinePerformance(winRate);
 
                         searchResults.championWinRates.add(winRate);
+                        searchResults.championPerformances.add(performance);
                         wins = 0; //reset winRate variable after specific champion ID is calculated
                         totalGames = 0;
                     }
+
+                    String summonerID = DataUtils.getSummonerID(userResults);
+
+                    //determine the user's rank
+                    String summonerRankURL = DataUtils.buildRankURL(summonerID);
+                    String summonerRankJSON = NetworkUtils.doHTTPGet(summonerRankURL);
+                    searchResults.summonerRank = DataUtils.getUserRank(summonerRankJSON);
 
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -209,6 +293,16 @@ public class SummonerStats extends AppCompatActivity implements LoaderManager.Lo
         public void deliverResult(SummonerStatsData data) {
             searchData = data;
             super.deliverResult(data);
+        }
+    }
+
+    public String capitalizeString(String s) { //capitalizes the first letter in a string
+        if (s.length() > 0) { //check for length greater than 0, can't capitalize a string with no letters!
+            String capitalizedString = s.substring(0, 1).toUpperCase() + s.substring(1);
+            return capitalizedString;
+        }
+        else {
+            return null;
         }
     }
 }

@@ -1,11 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <!-- Base application theme. -->
     <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
         <!-- Customize your theme here. -->
         <item name="colorPrimary">@color/titleBackground</item>
         <item name="colorPrimaryDark">@color/searchBackground</item>
         <item name="colorAccent">@color/mainText</item>
-    </style>
+        <item name="android:textColor">@color/mainText</item>
+        <item name="android:windowBackground">@color/statsBackground</item>
+        <item name="background">@color/statsBackground</item>
+        <item name="android:textColorPrimary">@color/mainText</item>
+        <item name="android:colorBackground">@color/statsBackground</item>
+        <item name="android:textColorSecondary">@color/mainText</item>
 
+        <!--Style for preferences to inherit -->
+        <item name="preferenceTheme">
+            @style/PreferenceThemeOverlay.v14.Material
+        </item>
+    </style>
 </resources>

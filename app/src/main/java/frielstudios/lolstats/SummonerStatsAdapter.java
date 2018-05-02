@@ -1,6 +1,5 @@
 package frielstudios.lolstats;
 
-import android.content.Context;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -8,8 +7,8 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import com.squareup.picasso.Picasso;
-
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.request.RequestOptions;
 import java.util.ArrayList;
 
 /**
@@ -20,17 +19,19 @@ public class SummonerStatsAdapter extends RecyclerView.Adapter<SummonerStatsAdap
     private ArrayList<String> championImages; //holds data for each champion image
     private ArrayList<String> championNames; //holds name for each image
     private ArrayList<Integer> championWinRates; //holds win percentage for each champion
+    private ArrayList<Integer> championPerformances; //holds performance indicator for each champion
 
-    //private OnSearchItemClickListener mSeachItemClickListener;
+    private OnSearchItemClickListener mChampionClickListener;
 
-    /*SummonerStatsAdapter(OnSearchItemClickListener searchItemClickListener) {
-        mSeachItemClickListener = searchItemClickListener;
-    }*/
+    SummonerStatsAdapter(OnSearchItemClickListener searchItemClickListener) {
+       mChampionClickListener = searchItemClickListener;
+    }
 
-    public void updateSearchResults(ArrayList<String> championNames, ArrayList<String> championImages, ArrayList<Integer> championWinRates) {
+    public void updateSearchResults(ArrayList<String> championNames, ArrayList<String> championImages, ArrayList<Integer> championWinRates, ArrayList<Integer> championPerformances) {
         this.championNames = championNames;
         this.championImages = championImages;
         this.championWinRates = championWinRates;
+        this.championPerformances = championPerformances;
         notifyDataSetChanged();
     }
 
@@ -51,39 +52,44 @@ public class SummonerStatsAdapter extends RecyclerView.Adapter<SummonerStatsAdap
     }
 
     public interface OnSearchItemClickListener {
-        void onSearchItemClick(DataUtils.SearchResult searchResult);
+        void onChampionClick(String name);
     }
 
     @Override
     public void onBindViewHolder(StatsViewHolder holder, int position) {
         //holder.bind(userList.get(position), image);
-        holder.bind(championNames.get(position), championImages.get(position), championWinRates.get(position));
+        holder.bind(championNames.get(position), championImages.get(position), championWinRates.get(position), championPerformances.get(position));
     }
 
     class StatsViewHolder extends RecyclerView.ViewHolder {
         private TextView championName; //holds name of championImage
         private TextView championWinRate; //holds win rate of champion
         private ImageView championImage; //holds image of champion
+        private ImageView championPerformance; //holds image of performance icon
 
         public StatsViewHolder(View itemView) {
             super(itemView);
             championName = (TextView)itemView.findViewById(R.id.championName);
             championWinRate = (TextView)itemView.findViewById(R.id.championWinRate);
             championImage = (ImageView) itemView.findViewById(R.id.champImage);
+            championPerformance = (ImageView)itemView.findViewById(R.id.championPerformance);
 
             itemView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    //DataUtils.SearchResult searchResult = userList.get(getAdapterPosition());
-                    //mSeachItemClickListener.onSearchItemClick(searchResult);
+                    String name = championNames.get(getAdapterPosition());
+                    mChampionClickListener.onChampionClick(name);
                 }
             });
         }
 
-          public void bind(String name, String image, int winRate) {
-            Picasso.with(championImage.getContext()).load(image).resize(300, 300).into(championImage);
+          public void bind(String name, String image, int winRate, int performance) { //set dynamic content into recycler view
             championName.setText(name);
             championWinRate.setText("\nWin Rate: " + winRate + "%");
+            Glide.with(championImage.getContext()).load(image).apply(new RequestOptions().circleCrop().override(300, 300))
+                    .into(championImage);
+            Glide.with(championPerformance.getContext()).load(performance).apply(new RequestOptions().override(96, 96))
+                    .into(championPerformance);
         }
     }
 }

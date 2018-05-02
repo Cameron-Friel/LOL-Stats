@@ -6,6 +6,11 @@
     android:background="@color/statsBackground"
     android:orientation="vertical">
 
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/colorAccent" />
+
     <android.support.v4.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent">
@@ -18,40 +23,25 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent">
 
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:background="@color/colorAccent"
-                    android:id="@+id/view2" />
-
                 <android.support.v7.widget.RecyclerView
                     android:id="@+id/statsView"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:layout_below="@+id/champImageLine" />
 
-                <TextView
-                    android:id="@+id/userName"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="20dp"
-                    android:layout_marginBottom="60dp"
-                    android:textColor="@color/mainText"
-                    android:textSize="35sp"/>
-
-
                 <ImageView
-                    android:id="@+id/userRank"
-                    android:layout_width="wrap_content"
-                    android:layout_height="match_parent"
-                    android:layout_toRightOf="@+id/userName"
-                    android:layout_above="@+id/champImageLine" />
+                    android:id="@+id/champImage"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:adjustViewBounds="true"
+                    android:src="@drawable/test">
+                </ImageView>
 
                 <View
                     android:id="@+id/champImageLine"
                     android:layout_width="match_parent"
                     android:layout_height="1dp"
-                    android:layout_below="@+id/userName"
+                    android:layout_below="@+id/champImage"
                     android:background="@color/colorAccent" />
 
                 <ProgressBar
